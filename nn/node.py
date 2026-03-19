@@ -17,3 +17,7 @@ class Node:
     def backprop(self, incoming_grad):
         # Accumulate incoming gradient during backpropagation
         self.grad += incoming_grad
+
+    def null_gradients(self):
+        # Reset gradients to zero before each training step
+        self.grad = 0
