@@ -51,14 +51,14 @@ class Softmax:
         numpy array with shape (batch_size, 10)
             Probabilities summing to 1 across each row
         """
-        shifted = x - np.max(x, axis=1, keepdims=1) # Make values <= 0 to prevent overflow
+        shifted = x - np.max(x, axis=1, keepdims=True) # Make values <= 0 to prevent overflow
         exp = np.exp(shifted)
-        self.output = exp / np.sum(exp, axis=1, keepdims=1)
+        self.output = exp / np.sum(exp, axis=1, keepdims=True)
         return self.output
 
     def backprop(self, predictions, true_labels):
         """
-        Backward pss for Softmax 
+        Backward pass for Softmax 
 
         Parameters:
         predictions: numpy array with shape (batch_size, 10)
