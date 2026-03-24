@@ -1,9 +1,10 @@
 import numpy as np
+import pickle
 
 class Network:
     """
-    Fully connected neural network taht stacks layers.
-    Runs forward and backward passes.
+    Fully connected neural network that stacks layers.
+    Runs forward and backward passes, update, predict, and save and load weights
     """
 
     def __init__(self, layers):
@@ -20,25 +21,28 @@ class Network:
         
         Returns:
         numpy array with shape (batch_size, 10)
-            Output of the last layer (the probabilities of each digit)
+            Outputs the last layer (the probabilities of each digit)
         """
-        pass
+        output = x
+        for layer in self.layers:
+            output = layer.forward(output)
+        
+        return output
 
-    def backward(self, grad, true_labels):
+    def backward(self, grad):
         """
         Run backward pass over the full network of layers
 
         Parameters:
         grad: numpy array with shape (batch_size, 10)
             Gradient from the loss function
-        
-        true_labels: numpy array with shape (batch_size, 10)
-            The correct labels for each image
 
         Returns:
         None
         """
-        pass
+        for layer in reversed(self.layers):
+            grad = layer.backprop(grad)
+
 
     def update(self, learning_rate):
         """
@@ -51,7 +55,10 @@ class Network:
         Returns:
         None
         """
-        pass
+        for layer in self.layers:
+            if hasattr(layer, 'd_weights'):
+                layer.weights -= learning_rate * layer.d_weights
+                layer.biases -= learning_rate * layer.d_biases
 
     def predict(self, x):
         """
@@ -65,7 +72,8 @@ class Network:
         numpy array with shape (batch_size,)
             Predicted digit (0-9) for each image
         """
-        pass
+        output = self.forward(x)
+        return np.argmax(output, axis=1)
 
     def save_weights(self, filepath):
         """
@@ -78,7 +86,8 @@ class Network:
         Returns:
         None
         """
-        pass
+        with open(filepath, 'wb') as f:
+            pickle.dump(self.layers, f)
 
     def load_weights(self, filepath):
         """
@@ -91,4 +100,5 @@ class Network:
         Returns:
         None
         """
-        pass
+        with open(filepath, 'rb') as f:
+            self.layers = pickle.load(f)
