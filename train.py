@@ -102,3 +102,27 @@ def train(network, x_train, y_train, epochs, batch_size, learning_rate):
         print(f"Epoch {epoch+1} - Loss: {loss:.4f}")
     
     return loss_history
+
+def main():
+    # Download and load mnist
+    filepath = download_mnist()
+    x_train, y_train, x_test, y_test = load_mnist(filepath)
+
+    network = Network([Dense(784, 128), ReLU(), Dense(128, 64), ReLU(), Dense(64, 10), Softmax()]) # Build our network
+
+    # Train
+    loss_history = train(network, x_train, y_train, epochs=20, batch_size=32, learning_rate=0.01)
+    print("\n") # Add space after the losses printed during training
+
+    # Save weights
+    os.makedirs("model", exist_ok=True)
+    network.save_weights("model/weights.pkl")
+
+    # Predict on test set
+    predictions = network.predict(x_test)
+    true_labels = np.argmax(y_test, axis=1)
+    accuracy = np.mean(predictions == true_labels)
+    print(f"Test accuracy: {accuracy * 100:.2f}%")
+
+if __name__ == "__main__":
+    main()
