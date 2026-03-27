@@ -56,18 +56,16 @@ class Softmax:
         self.output = exp / np.sum(exp, axis=1, keepdims=True)
         return self.output
 
-    def backprop(self, predictions, true_labels):
+    def backprop(self, incoming_grad):
         """
         Backward pass for Softmax 
 
         Parameters:
-        predictions: numpy array with shape (batch_size, 10)
-            Softmax output probabilities
-        true_labels: numpy array with shape (batch_size, 10)
-            True labels for each image (supervised learning)
+        incoming_grad: numpy array
+            Gradient flowing in from the next layer
         
         Returns:
         numpy array with shape (batch_size, 10)
             Gradient to pass to previous layer
         """
-        return predictions - true_labels
+        return incoming_grad
