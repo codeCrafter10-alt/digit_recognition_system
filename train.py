@@ -111,7 +111,7 @@ def main():
     network = Network([Dense(784, 128), ReLU(), Dense(128, 64), ReLU(), Dense(64, 10), Softmax()]) # Build our network
 
     # Train
-    loss_history = train(network, x_train, y_train, epochs=20, batch_size=32, learning_rate=0.01)
+    loss_history = train(network, x_train, y_train, epochs=30, batch_size=32, learning_rate=0.1)
     print("\n") # Add space after the losses printed during training
 
     # Save weights
