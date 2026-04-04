@@ -5,6 +5,7 @@ from nn.network import Network
 from nn.layers import Dense
 from nn.activations import ReLU, Softmax
 from nn.loss import CrossEntropy
+from augment import augment
 
 def download_mnist():
     """
@@ -89,6 +90,8 @@ def train(network, x_train, y_train, epochs, batch_size, learning_rate):
             # Forward pass
             x_batch = x_train[i:i+batch_size]
             y_batch = y_train[i:i+batch_size]
+            x_batch = np.array([augment(img) for img in x_batch])
+
             predictions = network.forward(x_batch)
 
             loss = loss_fn.forward(predictions, y_batch) # Compute loss
