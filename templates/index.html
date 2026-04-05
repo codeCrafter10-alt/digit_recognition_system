@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digit Recognizer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Sans-serif', monospace;
+            background: #00121a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            font-weight: normal;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #cecece;
+            margin-bottom: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        #canvas {
+            display: block;
+            background: #111;
+            border: 1px solid #333;
+            cursor: crosshair;
+            max-width: 90%;
+            height: auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            font-family: 'Courier New', monospace;
+            font-size: 1.6rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 0.6rem 1.5rem;
+            background: transparent;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            cursor: pointer;
+            transition: border-color 0.15s, color 0.15s;
+            margin-top: 2rem;
+            margin-bottom: 0rem;
+            margin-left: 1rem;
+            margin-right: 1rem;
+        }
+
+        button:hover { border-color: #e0e0e0; }
+
+        #predict-btn {
+            border-color: #e0e0e0;
+        }
+
+        #predict-btn:hover {
+            background: #e0e0e0;
+            color: #0a0a0a;
+        }
+
+        #result {
+            margin-top: 1rem;
+            font-size: 4.2rem;
+            font-weight: bold;
+            color: #fff;
+            min-height: 7rem;
+            letter-spacing: -0.02em;
+        }
+
+        #result.loading {
+            font-size: 3rem;
+            color: #555;
+            letter-spacing: 0.2em;
+            padding-top: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Digit Recognizer</h1>
+
+    <canvas id="canvas" width="392" height="392"></canvas>
+
+    <div class="controls">
+        <button id="clear-btn">Clear</button>
+        <button id="predict-btn">Predict</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const result = document.getElementById("result");
+
+        // Drawing state
+        let isDrawing = false;
+
+        // Set drawing style
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 16;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        // Mouse events
+        canvas.addEventListener("mousedown", (e) => {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
+
+        canvas.addEventListener("mousemove", (e) => {
+            if (!isDrawing) return;
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+        });
+
+        canvas.addEventListener("mouseup", () => { isDrawing = false; });
+        canvas.addEventListener("mouseleave", () => { isDrawing = false; });
+
+        // Clear canvas
+        document.getElementById("clear-btn").addEventListener("click", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            result.textContent = "";
+            result.className = "";
+        });
+
+        // Predict
+        document.getElementById("predict-btn").addEventListener("click", async () => {
+            result.textContent = "thinking...";
+            result.className = "loading";
+
+            const imageData = canvas.toDataURL("image/png");
+
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ image: imageData })
+            });
+
+            const data = await response.json();
+            result.textContent = data.prediction;
+            result.className = "";
+        });
+    </script>
+</body>
+</html>
