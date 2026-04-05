@@ -6,6 +6,7 @@ from nn.layers import Dense
 from nn.activations import ReLU, Softmax
 from nn.loss import CrossEntropy
 from augment import augment
+import pickle
 
 def download_mnist():
     """
@@ -120,6 +121,10 @@ def main():
     # Save weights
     os.makedirs("model", exist_ok=True)
     network.save_weights("model/weights.pkl")
+    
+    # Save loss history
+    with open("model/loss_history.pkl", "wb") as f:
+        pickle.dump(loss_history, f)
 
     # Predict on test set
     predictions = network.predict(x_test)
