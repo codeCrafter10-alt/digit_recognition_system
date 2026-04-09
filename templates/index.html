@@ -59,6 +59,7 @@
             margin-bottom: 0rem;
             margin-left: 1rem;
             margin-right: 1rem;
+            touch-action: manipulation;
         }
 
         button:hover { border-color: #e0e0e0; }
@@ -130,6 +131,30 @@
 
         canvas.addEventListener("mouseup", () => { isDrawing = false; });
         canvas.addEventListener("mouseleave", () => { isDrawing = false; });
+
+        // Touch events
+        canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.touches[0].clientX - rect.left;
+            const y = e.touches[0].clientY - rect.top;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.touches[0].clientX - rect.left;
+            const y = e.touches[0].clientY - rect.top;
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        });
+
+        canvas.addEventListener("touchend", () => { isDrawing = false; });
+        canvas.addEventListener("touchcancel", () => { isDrawing = false; });
 
         // Clear canvas
         document.getElementById("clear-btn").addEventListener("click", () => {
