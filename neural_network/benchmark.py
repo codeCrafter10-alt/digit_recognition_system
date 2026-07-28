@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 
 # Load loss history
-with open("model/loss_history.pkl", "rb") as f:
+with open("neural_network/model/loss_history.pkl", "rb") as f:
     loss_history = pickle.load(f)
 
 # Plot

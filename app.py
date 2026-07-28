@@ -3,9 +3,9 @@ import base64
 from io import BytesIO
 from PIL import Image
 import numpy as np
-from nn.network import Network
-from nn.layers import Dense
-from nn.activations import ReLU, Softmax
+from neural_network.nn.network import Network
+from neural_network.nn.layers import Dense
+from neural_network.nn.activations import ReLU, Softmax
 
 app = Flask(__name__)
 
