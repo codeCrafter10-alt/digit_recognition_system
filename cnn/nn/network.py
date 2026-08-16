@@ -16,7 +16,7 @@ class Network:
         Run forward pass through all layers
 
         Parameters:
-        x: numpy array with shape (batch_size, 784)
+        x: numpy array with shape (batch_size, neurons)
             Input data
         
         Returns:
