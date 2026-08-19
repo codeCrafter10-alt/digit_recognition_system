@@ -13,7 +13,8 @@ class Dense:
 
     def __init__(self, input_size, output_size):
         """ Initalize weights randomly and biases to 0"""
-        self.weights = np.random.randn(input_size, output_size) * 0.01
+        scale = np.sqrt(2 / input_size)  
+        self.weights = np.random.randn(input_size, output_size) * scale
         self.biases = np.zeros(output_size)
     
     def forward(self, x):
@@ -93,36 +94,47 @@ class MaxPool2D:
         returns:
             (batch_size, channels, output_height, output_width)
         """
+
         self.input = x
 
         batch_size, channels, height, width = x.shape
 
-        output_height = (height - self.pool_size) // self.stride + 1
-        output_width = (width - self.pool_size) // self.stride + 1
+        pool = self.pool_size
+        stride = self.stride
 
-        output = np.zeros(
-            (batch_size, channels, output_height, output_width)
+        output_height = (
+            (height - pool) // stride
+        ) + 1
+
+        output_width = (
+            (width - pool) // stride
+        ) + 1
+
+        # Get all pooling regions at once.
+        windows = np.lib.stride_tricks.sliding_window_view(
+            x,
+            (pool, pool),
+            axis=(2, 3)
         )
 
-        for n in range(batch_size):
-            for c in range(channels):
-                for i in range(output_height):
-                    for j in range(output_width):
+        # Apply the pooling stride.
+        windows = windows[
+            :,
+            :,
+            ::stride,
+            ::stride,
+            :,
+            :
+        ]
 
-                        h_start = i * self.stride
-                        h_end = h_start + self.pool_size
+        # Save the windows for backpropagation.
+        self.windows = windows
 
-                        w_start = j * self.stride
-                        w_end = w_start + self.pool_size
-
-                        region = x[
-                            n,
-                            c,
-                            h_start:h_end,
-                            w_start:w_end
-                        ]
-
-                        output[n, c, i, j] = np.max(region)
+        # Take the maximum value from each pooling region.
+        output = np.max(
+            windows,
+            axis=(4, 5)
+        )
 
         return output
 
@@ -131,51 +143,73 @@ class MaxPool2D:
         Backpropagate gradient through max pooling.
 
         Parameters:
-        incoming_grad: (batch_size, channels, output_height, output_width)
-            Gradient from the next layer.
+        incoming_grad:
+            (batch_size, channels,
+             output_height, output_width)
 
         Returns:
-        (batch_size, channels, height, width)
-            Gradient to pass to the previous layer.
+            (batch_size, channels, height, width)
         """
+
         x = self.input
 
         batch_size, channels, height, width = x.shape
 
-        dx = np.zeros_like(x)
+        pool = self.pool_size
+        stride = self.stride
 
         output_height = incoming_grad.shape[2]
         output_width = incoming_grad.shape[3]
 
-        for n in range(batch_size):
-            for c in range(channels):
-                for i in range(output_height):
-                    for j in range(output_width):
+        dx = np.zeros_like(x)
 
-                        h_start = i * self.stride
-                        h_end = h_start + self.pool_size
+        # Find which position in each pooling window
+        # contained the maximum value.
+        max_positions = np.argmax(
+            self.windows.reshape(
+                batch_size,
+                channels,
+                output_height,
+                output_width,
+                pool * pool
+            ),
+            axis=4
+        )
 
-                        w_start = j * self.stride
-                        w_end = w_start + self.pool_size
+        # Put the incoming gradient at the position
+        # that contained the maximum.
+        for i in range(output_height):
 
-                        region = x[
-                            n,
-                            c,
-                            h_start:h_end,
-                            w_start:w_end
-                        ]
+            h_start = i * stride
 
-                        max_index = np.unravel_index(
-                            np.argmax(region),
-                            region.shape
-                        )
+            for j in range(output_width):
 
-                        dx[
-                            n,
-                            c,
-                            h_start + max_index[0],
-                            w_start + max_index[1]
-                        ] += incoming_grad[n, c, i, j]
+                w_start = j * stride
+
+                positions = max_positions[
+                    :,
+                    :,
+                    i,
+                    j
+                ]
+
+                row = positions // pool
+                col = positions % pool
+
+                batch_indices = np.arange(batch_size)[:, None]
+                channel_indices = np.arange(channels)[None, :]
+
+                dx[
+                    batch_indices,
+                    channel_indices,
+                    h_start + row,
+                    w_start + col
+                ] += incoming_grad[
+                    :,
+                    :,
+                    i,
+                    j
+                ]
 
         return dx
 
@@ -208,7 +242,9 @@ class Conv2D:
         self.stride = stride
 
         # He initialization
-        scale = np.sqrt(2 / (in_channels * kernel_size * kernel_size))
+        scale = np.sqrt(
+            2 / (in_channels * kernel_size * kernel_size)
+        )
 
         self.weights = np.random.randn(
             out_channels,
@@ -231,50 +267,53 @@ class Conv2D:
 
         self.input = x
 
-        batch_size, _, height, width = x.shape
+        batch_size, channels, height, width = x.shape
+
+        kernel = self.kernel_size
+        stride = self.stride
 
         output_height = (
-            (height - self.kernel_size) // self.stride
+            (height - kernel) // stride
         ) + 1
 
         output_width = (
-            (width - self.kernel_size) // self.stride
+            (width - kernel) // stride
         ) + 1
 
-        output = np.zeros(
-            (
-                batch_size,
-                self.out_channels,
-                output_height,
-                output_width
-            )
+        # Extract all kernel-sized regions at once.
+        windows = np.lib.stride_tricks.sliding_window_view(
+            x,
+            (kernel, kernel),
+            axis=(2, 3)
         )
 
-        for n in range(batch_size):
-            for f in range(self.out_channels):
+        # Apply the convolution stride.
+        windows = windows[
+            :,
+            :,
+            ::stride,
+            ::stride,
+            :,
+            :
+        ]
 
-                kernel = self.weights[f]
+        # Save the windows for backpropagation.
+        self.windows = windows
 
-                for i in range(output_height):
-                    for j in range(output_width):
+        # Multiply every window by every filter.
+        output = np.einsum(
+            "ncijkl,fckl->nfij",
+            windows,
+            self.weights
+        )
 
-                        h_start = i * self.stride
-                        h_end = h_start + self.kernel_size
-
-                        w_start = j * self.stride
-                        w_end = w_start + self.kernel_size
-
-                        region = x[
-                            n,
-                            :,
-                            h_start:h_end,
-                            w_start:w_end
-                        ]
-
-                        output[n, f, i, j] = (
-                            np.sum(region * kernel)
-                            + self.biases[f]
-                        )
+        # Add the bias for each output channel.
+        output += self.biases[
+            None,
+            :,
+            None,
+            None
+        ]
 
         return output
 
@@ -283,56 +322,61 @@ class Conv2D:
         Backpropagate through convolution.
 
         Returns:
-            gradient with respect to input
+            Gradient with respect to input.
         """
 
         x = self.input
 
-        batch_size, _, height, width = x.shape
+        batch_size, channels, height, width = x.shape
 
-        dx = np.zeros_like(x)
-
-        self.d_weights = np.zeros_like(self.weights)
-        self.d_biases = np.zeros_like(self.biases)
+        kernel = self.kernel_size
+        stride = self.stride
 
         output_height = incoming_grad.shape[2]
         output_width = incoming_grad.shape[3]
 
-        for n in range(batch_size):
-            for f in range(self.out_channels):
+        # Gradient with respect to the filters.
+        self.d_weights = np.einsum(
+            "nfij,ncijkl->fckl",
+            incoming_grad,
+            self.windows
+        )
 
-                kernel = self.weights[f]
+        # Gradient with respect to the biases.
+        self.d_biases = np.sum(
+            incoming_grad,
+            axis=(0, 2, 3)
+        )
 
-                for i in range(output_height):
-                    for j in range(output_width):
+        # Gradient with respect to the input.
+        dx = np.zeros_like(x)
 
-                        h_start = i * self.stride
-                        h_end = h_start + self.kernel_size
+        for i in range(output_height):
 
-                        w_start = j * self.stride
-                        w_end = w_start + self.kernel_size
+            h_start = i * stride
+            h_end = h_start + kernel
 
-                        region = x[
-                            n,
-                            :,
-                            h_start:h_end,
-                            w_start:w_end
-                        ]
+            for j in range(output_width):
 
-                        grad = incoming_grad[n, f, i, j]
+                w_start = j * stride
+                w_end = w_start + kernel
 
-                        # Gradient with respect to filter
-                        self.d_weights[f] += region * grad
+                grad = incoming_grad[
+                    :,
+                    :,
+                    i,
+                    j
+                ]
 
-                        # Gradient with respect to input
-                        dx[
-                            n,
-                            :,
-                            h_start:h_end,
-                            w_start:w_end
-                        ] += kernel * grad
-
-                        # Gradient with respect to bias
-                        self.d_biases[f] += grad
+                dx[
+                    :,
+                    :,
+                    h_start:h_end,
+                    w_start:w_end
+                ] += np.einsum(
+                    "nf,fckl->nckl",
+                    grad,
+                    self.weights
+                )
 
         return dx
