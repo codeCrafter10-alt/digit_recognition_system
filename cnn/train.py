@@ -8,9 +8,9 @@ from nn.loss import CrossEntropy
 from augment import augment
 
 # Settings
-BATCH_SIZE = 64
-EPOCHS = 10
-LEARNING_RATE = 0.01
+BATCH_SIZE = 32
+EPOCHS = 20
+LEARNING_RATE = 0.05
 
 def download_mnist():
     """
