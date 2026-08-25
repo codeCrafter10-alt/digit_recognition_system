@@ -1,6 +1,6 @@
-from nn.layers import Conv2D, MaxPool2D, Flatten, Dense
-from nn.activations import ReLU, Softmax
-from nn.network import Network
+from cnn.nn.layers import Conv2D, MaxPool2D, Flatten, Dense
+from cnn.nn.activations import ReLU, Softmax
+from cnn.nn.network import Network
 
 
 def create_model():

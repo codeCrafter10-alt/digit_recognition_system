@@ -3,9 +3,9 @@ import os
 import urllib.request
 import pickle
 
-from model import create_model
-from nn.loss import CrossEntropy
-from augment import augment
+from cnn.model import create_model
+from cnn.nn.loss import CrossEntropy
+from cnn.augment import augment
 
 # Settings
 BATCH_SIZE = 32
@@ -113,6 +113,8 @@ def evaluate(model, x, y):
         )
 
         x_batch = x[start:end]
+        x_batch = np.array([augment(img) for img in x_batch])
+
         y_batch = y[start:end]
 
         # Forward pass
@@ -209,7 +211,8 @@ def train(model, loss_function, x_train, y_train, x_test, y_test):
             # Update weights
             model.update(LEARNING_RATE)
 
-            history.append(loss)
+
+        history.append(loss)
 
         # Average training loss
         average_loss = total_loss / num_samples
