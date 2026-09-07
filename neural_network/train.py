@@ -1,10 +1,10 @@
 import urllib.request
 import numpy as np
 import os
-from nn.network import Network
-from nn.layers import Dense
-from nn.activations import ReLU, Softmax
-from nn.loss import CrossEntropy
+from neural_network.nn.network import Network
+from neural_network.nn.layers import Dense
+from neural_network.nn.activations import ReLU, Softmax
+from neural_network.nn.loss import CrossEntropy
 from augment import augment
 import pickle
 
@@ -119,11 +119,11 @@ def main():
     print("\n") # Add space after the losses printed during training
 
     # Save weights
-    os.makedirs("model", exist_ok=True)
-    network.save_weights("model/weights.pkl")
+    os.makedirs("neural_network/model", exist_ok=True)
+    network.save_weights("neural_network/model/weights.pkl")
     
     # Save loss history
-    with open("model/loss_history.pkl", "wb") as f:
+    with open("neural_network/model/loss_history.pkl", "wb") as f:
         pickle.dump(loss_history, f)
 
     # Predict on test set

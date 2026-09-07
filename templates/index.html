@@ -36,6 +36,7 @@
             cursor: crosshair;
             max-width: 90%;
             height: auto;
+            touch-action: none;
         }
 
         .controls {
@@ -73,23 +74,43 @@
             color: #0a0a0a;
         }
 
-        #result {
+        #results {
+            display: flex;
+            gap: 3rem;
             margin-top: 1rem;
+            text-align: center;
+        }
+
+        .model {
+            min-width: 150px;
+        }
+
+        .model h2 {
+            font-size: 1rem;
+            font-weight: normal;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 0.5rem;
+        }
+
+        .prediction {
             font-size: 4.2rem;
             font-weight: bold;
             color: #fff;
-            min-height: 7rem;
+            min-height: 5rem;
             letter-spacing: -0.02em;
         }
 
-        #result.loading {
-            font-size: 3rem;
+        .prediction.loading {
+            font-size: 1.5rem;
             color: #555;
-            letter-spacing: 0.2em;
+            letter-spacing: 0.1em;
             padding-top: 1.5rem;
         }
     </style>
 </head>
+
 <body>
     <h1>Digit Recognizer</h1>
 
@@ -100,12 +121,24 @@
         <button id="predict-btn">Predict</button>
     </div>
 
-    <div id="result"></div>
+    <div id="results">
+        <div class="model">
+            <h2 style="font-size: 1.6rem; margin-right: 0.7rem; margin-top: 0.8rem;">Neural Network</h2>
+            <div id="nn-result" class="prediction">—</div>
+        </div>
+
+        <div class="model">
+            <h2 style="font-size: 1.6rem; margin-left: 0.7rem; margin-top: 0.8rem;">CNN</h2>
+            <div id="cnn-result" class="prediction">—</div>
+        </div>
+    </div>
 
     <script>
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
-        const result = document.getElementById("result");
+
+        const nnResult = document.getElementById("nn-result");
+        const cnnResult = document.getElementById("cnn-result");
 
         // Drawing state
         let isDrawing = false;
@@ -159,27 +192,55 @@
         // Clear canvas
         document.getElementById("clear-btn").addEventListener("click", () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            result.textContent = "";
-            result.className = "";
+            nnResult.textContent = "—";
+            cnnResult.textContent = "—";
+            nnResult.className = "prediction";
+            cnnResult.className = "prediction";
         });
 
         // Predict
         document.getElementById("predict-btn").addEventListener("click", async () => {
-            result.textContent = "thinking...";
-            result.className = "loading";
+            nnResult.textContent = "thinking...";
+            cnnResult.textContent = "thinking...";
+
+            nnResult.className = "prediction loading";
+            cnnResult.className = "prediction loading";
 
             const imageData = canvas.toDataURL("image/png");
 
-            const response = await fetch("/predict", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ image: imageData })
-            });
+            try {
+                const [nnResponse, cnnResponse] = await Promise.all([
+                    fetch("/predict_nn", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ image: imageData })
+                    }),
 
-            const data = await response.json();
-            result.textContent = data.prediction;
-            result.className = "";
+                    fetch("/predict_cnn", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ image: imageData })
+                    })
+                ]);
+
+                const nnData = await nnResponse.json();
+                const cnnData = await cnnResponse.json();
+
+                nnResult.textContent = nnData.prediction ?? "Error";
+                cnnResult.textContent = cnnData.prediction ?? "Error";
+
+                nnResult.className = "prediction";
+                cnnResult.className = "prediction";
+
+            } catch (error) {
+                console.error(error);
+
+                nnResult.textContent = "Error";
+                cnnResult.textContent = "Error";
+
+                nnResult.className = "prediction";
+                cnnResult.className = "prediction";
+            }
         });
     </script>
 </body>
-</html>
